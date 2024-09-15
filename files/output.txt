@@ -1,0 +1,2 @@
+Hello world!, data read from input.txt: this is the sample text that is going to be replaced by the node js fs method. 
+Date created: 13/8/2024
