@@ -83,7 +83,7 @@ movieSchema.virtual('durationInHours').get(function () {
 //.save() or .create()
 //inserMany, findByIdAndUpdate will not work
 movieSchema.pre('save', function (next) {
-    this.createdBy = 'MANOJJHA';
+    this.createdBy = 'Omkar';
     next();
 })
 

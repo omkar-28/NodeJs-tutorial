@@ -4,13 +4,13 @@ const jwt = require('jsonwebtoken');
 const CustomError = require('./../Utils/customError');
 const util = require('util');
 
-function setToken(name) {
-    return jwt.sign({ userName: name }, process.env.SECRET_STR, { expiresIn: process.env.LOGIN_EXPIRES });
+function setToken(id) {
+    return jwt.sign({ id }, process.env.SECRET_STR, { expiresIn: process.env.LOGIN_EXPIRES });
 }
 
 exports.signup = asyncErrorHandler(async (req, res, next) => {
     const newUser = await User.create(req.body);
-    const token = setToken(newUser.name);
+    const token = setToken(newUser._id);
     res.status(201).json({
         status: 'success',
         token,
@@ -45,7 +45,7 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
         return next(error);
     };
 
-    const token = setToken(user.name);
+    const token = setToken(user._id);
     res.status(200).json({
         status: 'success',
         token,
@@ -80,18 +80,32 @@ exports.protect = asyncErrorHandler(async (req, res, next) => {
 
     // Validate the token
     const decoded = jwt.verify(token, process.env.SECRET_STR);
-    req.user = await User.find({ name: decoded.userName });
 
-    if (!req.user) {
+    // Check if the user still exists
+    // console.log(decoded)
+    const user = await User.findById(decoded.id);
+    if (!user) {
         const error = new CustomError("User not found!", 404);
         return next(error);
     }
 
     // if the user changed their password
-    if (user.isPasswordChanged(decoded.iat)) {
+    const isPwdChanged = await user.isPasswordChanged(decoded.iat)
+    if (isPwdChanged) {
         const error = new CustomError("The user has changed their password. Please try logging in again", 400);
         return next(error);
     };
-    
+    req.user
     next();
 });
+
+exports.restrictTo = (...roles) => {
+    return (req, res, next) => {
+        console.log(roles, req.user.role)
+        if (!roles.includes(req.user.role)) {
+            const error = new CustomError("You do not have permission to access this route!", 403);
+            return next(error);
+        }
+        next();
+    }
+}

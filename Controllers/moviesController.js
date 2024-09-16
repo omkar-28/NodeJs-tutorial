@@ -1,8 +1,10 @@
-const { param } = require('../Routes/moviesRoutes');
 const CustomError = require('../Utils/customError');
 const Movie = require('./../Models/movieModel');
 const ApiFeatures = require('./../Utils/ApiFeatures');
 const asyncErrorHandler = require('./../Utils/asyncErrorHandler');
+const fs = require('fs');
+
+let moviesJson = JSON.parse(fs.readFileSync('./Data/movies.json'));
 
 exports.getHighestRated = (req, res, next) => {
     req.query.limit = '5';
@@ -54,7 +56,8 @@ exports.getMovie = asyncErrorHandler(async (req, res, next) => {
 exports.createMovie = asyncErrorHandler(async (req, res, next) => {
 
     const movie = await Movie.create(req.body);
-
+    // moviesJson.push(movie)
+    // fs.writeFileSync('./Data/movies.json', JSON.stringify(moviesJson));
     res.status(201).json({
         status: 'success',
         data: {
@@ -71,6 +74,8 @@ exports.updateMovie = async (req, res, next) => {
             const error = new CustomError('Movie with that ID is not found!', 404);
             return next(error);
         }
+        // moviesJson.push(updatedMovie)
+        // fs.writeFileSync('./Data/movies.json', JSON.stringify(moviesJson));
 
         res.status(200).json({
             status: "success",
@@ -94,10 +99,13 @@ exports.deleteMovie = asyncErrorHandler(async (req, res, next) => {
         const error = new CustomError('Movie with that ID is not found!', 404);
         return next(error);
     }
+    // movies.splice(index, 1);
+    // fs.writeFileSync('./Data/movies.json', JSON.stringify(moviesJson));
 
     res.status(204).json({
         status: 'success',
-        data: null
+        data: null,
+        message: `Movie with id ${req.params.id} deleted successfully.`
     });
 })
 
