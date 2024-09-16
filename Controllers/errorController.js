@@ -1,4 +1,4 @@
-const CustomError = require('./../Utils/CustomError');
+const CustomError = require("../Utils/customError");
 
 const devErrors = (res, error) => {
     res.status(error.statusCode).json({
@@ -29,6 +29,16 @@ const validationErrorHandler = (err) => {
     return new CustomError(msg, 400);
 }
 
+const tokenExpiredErrorHandler = (err) => {
+    const msg = 'Token expired. Please log in again.';
+    return new CustomError(msg, 401);
+}
+
+const jsonWebTokenExpiredError = (err) => {
+    const msg = 'Invalid token. Please log in again.';
+    return new CustomError(msg, 401);
+}
+
 const prodErrors = (res, error) => {
     if (error.isOperational) {
         res.status(error.statusCode).json({
@@ -53,7 +63,8 @@ module.exports = (error, req, res, next) => {
         if (error.name === 'CastError') error = castErrorHandler(error);
         if (error.code === 11000) error = duplicateKeyErrorHandler(error);
         if (error.name === 'ValidationError') error = validationErrorHandler(error);
-
+        if (error.name === 'TokenExpiredError') error = tokenExpiredErrorHandler(error);
+        if (error.name === 'JsonWebTokenExpiredError') error = jsonWebTokenExpiredError(error);
         prodErrors(res, error);
     }
 }

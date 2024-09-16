@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const bcrypt = require('bcrypt');
 
-//name, email, password, confirmPassword, photo
+// Define user schema
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -18,14 +19,51 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please enter a password.'],
-        minlength: 8
+        minlength: 8,
+        select: false, // Exclude password from queries by default
     },
     confirmPassword: {
         type: String,
-        required: [true, 'Please confirm your password.']
-    }
-})
+        required: [true, 'Please confirm your password.'],
+        validate: {
+            validator: function (value) {
+                return this.password === value;
+            },
+            message: 'Passwords do not match.'
+        }
+    },
+    passwordChangedAt: Date
+});
 
+// Hash password before saving user
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
+
+    try {
+        this.password = await bcrypt.hash(this.password, 12);
+        this.confirmPassword = undefined; // Remove confirmPassword field from the database
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Compare password
+userSchema.methods.comparePassword = async function (enteredPwd) {
+    return await bcrypt.compare(enteredPwd, this.password);
+};
+
+userSchema.methods.isPasswordChanged = async (JWTTimestamp) => {
+    if (this.passwordChangedAt) {
+        const passwordTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000);
+
+        return JWTTimestamp < passwordTimestamp;
+    }
+
+    return false;
+};
+
+// Create user model
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
